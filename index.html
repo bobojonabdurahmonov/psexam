@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pro Spelling Exam</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+    font-family:Segoe UI,Arial;
+    background:linear-gradient(135deg,#667eea,#764ba2);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    overflow: hidden;
+}
+.container{
+    background:#fff;
+    max-width:720px;
+    width:100%;
+    padding:35px;
+    border-radius:20px;
+    box-shadow:0 20px 60px rgba(0,0,0,.35);
+}
+h1{text-align:center;color:#667eea}
+.page{display:none}
+.page.active{display:block}
+
+.btn{
+    width:100%;
+    padding:15px;
+    border:none;
+    border-radius:10px;
+    background:#667eea;
+    color:#fff;
+    font-size:18px;
+    margin:10px 0;
+    cursor:pointer;
+}
+
+input{
+    width:100%;
+    padding:15px;
+    font-size:18px;
+    border-radius:10px;
+    border:2px solid #ddd;
+}
+
+.center{text-align:center}
+.counter{font-size:20px;color:#667eea;margin-top:10px}
+.timer{
+    font-size:26px;
+    font-weight:bold;
+    color:#f44336;
+    margin:10px 0;
+}
+
+.play{
+    width:90px;height:90px;
+    border-radius:50%;
+    border:none;
+    background:#4CAF50;
+    color:#fff;
+    font-size:36px;
+    cursor:pointer;
+}
+
+.result{padding:12px;border-radius:8px;margin:8px 0}
+.ok{background:#e8f5e9;border-left:5px solid #4CAF50}
+.no{background:#ffebee;border-left:5px solid #f44336}
+
+#answer {
+    width: 95%;
+}
+
+.modal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.6);
+    display:none;
+    align-items:center;
+    justify-content:center;
+}
+.modal-box{
+    background:#fff;
+    padding:30px;
+    border-radius:15px;
+    max-width:420px;
+    width:90%;
+    text-align:center;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<!-- HOME -->
+<div id="home" class="page active">
+<h1>🎯 Pro Spelling Exam</h1>
+<button class="btn" onclick="openDifficulty('word')">Words</button>
+<button class="btn" onclick="openDifficulty('number')">Numbers</button>
+<a href="https://monkeytype.com/"><button class="btn" >Typing       ↗️</button></a>
+</div>
+
+<!-- DIFFICULTY -->
+<div id="difficulty" class="page">
+<h1>⚙️ Choose Difficulty</h1>
+<button class="btn" onclick="chooseDifficulty('easy')">Easy</button>
+<button class="btn" onclick="chooseDifficulty('normal')">Normal</button>
+<button class="btn" onclick="chooseDifficulty('difficult')">Difficult</button>
+</div>
+
+<!-- TEST -->
+<div id="test" class="page">
+<h1>✍️ Spell Carefully</h1>
+
+<div class="center counter" id="counter"></div>
+<div class="center timer" id="timer"></div>
+
+<div class="center" style="margin:20px">
+<button class="play" onclick="play()">▶</button>
+<div id="replayInfo"></div>
+</div>
+
+<input id="answer" placeholder="Type here..." autofocus>
+<button class="btn" onclick="manualNext()">Next</button>
+</div>
+
+<!-- RESULT -->
+<div id="result" class="page">
+<h1>📊 Result</h1>
+<div id="score" class="center" style="font-size:26px;color:#667eea"></div>
+<div id="list"></div>
+<button class="btn" onclick="location.reload()">Restart</button>
+</div>
+
+</div>
+
+<!-- TIME UP MODAL -->
+<div id="timeUpModal" class="modal">
+<div class="modal-box">
+    <h2 style="color:#f44336">⏰ Time is up</h2>
+    <p>Vaqt tugadi. Ushbu savol yakunlandi.</p>
+    <button class="btn" onclick="confirmTimeUp()">OK</button>
+</div>
+</div>
+
+<script>
+const synth = speechSynthesis;
+const MAX_REPLAY = 3;
+
+let timerInterval;
+let secondsLeft;
+let replay;
+let index = 0;
+let items = [];
+let answers = [];
+let modalOpen = false;
+
+let selectedMode = "";
+let selectedDifficulty = "";
+let dynamicTime = 25;
+
+/* WORD LISTS */
+const EASY_WORDS = [
+"simple","basic","modern","natural","future",
+"system","method","design","process","support",
+
+"apple","pear","banana","orange","grape",
+"bread","water","coffee","sugar","salt",
+
+"global","local","public","private","normal",
+"easy","clear","clean","safe","ready",
+
+"name","fullname","number","email","address",
+"phone","login","logout","profile","account",
+
+"board","table","chair","window","door",
+"bridge","road","street","house","room",
+
+"book","pen","paper","note","school",
+"class","teacher","student","lesson","exam",
+
+"work","job","office","company","team",
+"manager","worker","client","service","task",
+
+"play","game","sport","music","movie",
+"video","photo","camera","sound","screen",
+
+"time","day","night","week","month",
+"year","today","tomorrow","yesterday","now",
+
+"open","close","start","stop","save",
+"load","send","receive","click","press",
+
+"happy","sad","good","bad","big",
+"small","fast","slow","new","old"
+];
+
+const NORMAL_WORDS = [
+"optimization","implementation","authentication",
+"infrastructure","reconciliation","transparency",
+
+"globalization","inevitable","substantial","contemporary",
+"collaboration","administration","interpretation","prioritization",
+"consideration","qualification","responsibility","significance",
+
+"environmental","technological","development","organization",
+"communication","representation","recommendation","identification",
+
+"establishment","transformation","documentation","investigation",
+"configuration","specialization","characteristic","classification",
+
+"participation","regulation","distribution","coordination",
+"negotiation","presentation","standardization","recognition",
+
+"integration","innovation","evaluation","adaptation",
+"maintenance","production","submission","collection",
+
+"preparation","observation","prediction","competition",
+"association","assumption","interaction","conclusion"
+];
+
+
+const DIFFICULT_WORDS = [
+"entrepreneurship","sustainability","accountability",
+"unprecedented","meticulous","phenomenon",
+"multifaceted","sophisticated","visualization","vulnerability",
+
+// +150 difficult words (C1–C2)
+"inconsequential","disproportionate","counterproductive","interdisciplinary",
+"misinterpretation","institutionalization","overcompensation","methodological",
+"philosophical","psychological",
+
+"electromagnetic","thermodynamics","biotechnology","neuroscience",
+"cryptocurrency","decentralization","interoperability","quantification",
+"approximation","differentiation",
+
+"heterogeneous","homogeneous","idiosyncratic","paradigmatic",
+"heuristic","axiomatic","empirical","theoretical","speculative","deterministic",
+
+"irreversibility","incompatibility","inaccessibility","unpredictability",
+"interchangeability","reproducibility","generalization","contextualization",
+"conceptualization","operationalization",
+
+"bureaucratization","commercialization","democratization","industrialization",
+"privatization","monopolization","digitalization","globalization","urbanization",
+"modernization",
+
+"dissemination","proliferation","consolidation","diversification",
+"prioritization","rationalization","standardization","synchronization",
+"optimization","restructuring",
+
+"misconception","presupposition","juxtaposition","contradiction",
+"ambiguity","paradox","fallibility","subjectivity","objectivity","relativity",
+
+"circumstantial","substantiation","corroboration","justification",
+"extrapolation","interpretability","verifiability","plausibility",
+"credibility","reliability",
+
+"anthropological","sociological","epistemological","ontological",
+"metaphysical","existential","phenomenological","dialectical",
+"hermeneutical","teleological",
+
+"macroeconomic","microeconomic","fiscalization","monetarization",
+"deflationary","inflationary","liberalization","deregulation",
+"capitalization","financialization",
+
+"bioengineering","nanotechnology","cybersecurity","cryptography",
+"machinelearning","artificiality","automatization","robotization",
+"virtualization","augmentation",
+
+"indistinguishable","incomprehensible","counterintuitive",
+"irreconcilable","unsubstantiated","incontrovertible",
+"uncharacteristic","unintelligible","nonlinear","multidimensional"
+];
+
+
+/* UTILS */
+function shuffle(a){ return a.sort(()=>Math.random()-0.5); }
+
+function randomNumbers(n){
+    let s=new Set();
+    while(s.size<n){
+        let len=Math.floor(Math.random()*5)+4;
+        let num="";
+        for(let i=0;i<len;i++) num+=Math.floor(Math.random()*10);
+        s.add(num);
+    }
+    return [...s];
+}
+
+function show(id){
+    document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+}
+
+/* FLOW */
+function openDifficulty(mode){
+    selectedMode = mode;
+    show("difficulty");
+}
+
+function chooseDifficulty(level){
+    selectedDifficulty = level;
+
+    if(selectedMode === "word"){
+        items =
+            level==="easy" ? shuffle([...EASY_WORDS]) :
+            level==="normal" ? shuffle([...NORMAL_WORDS]) :
+            shuffle([...DIFFICULT_WORDS]);
+        items = items.slice(0,10);
+        dynamicTime = 25;
+    }
+
+    if(selectedMode === "number"){
+        let count = level==="easy"?3:level==="normal"?6:9;
+        items = randomNumbers(count);
+        dynamicTime = level==="easy"?30:level==="normal"?20:12;
+    }
+
+    index = 0;
+    answers = [];
+    show("test");
+    loadWord();
+}
+
+function loadWord(){
+    synth.cancel();
+    modalOpen = false;
+    replay = MAX_REPLAY;
+    secondsLeft = dynamicTime;
+
+    counter.innerText = `${index+1} / ${items.length}`;
+    replayInfo.innerText = `Replay left: ${replay}`;
+    answer.value = "";
+    answer.focus();
+
+    updateTimerUI();
+    startTimer();
+    setTimeout(play,500);
+}
+
+function startTimer(){
+    clearInterval(timerInterval);
+    timerInterval = setInterval(()=>{
+        secondsLeft--;
+        updateTimerUI();
+        if(secondsLeft<=0 && !modalOpen){
+            clearInterval(timerInterval);
+            handleTimeUp();
+        }
+    },1000);
+}
+
+function updateTimerUI(){
+    timer.innerText = `⏱ ${secondsLeft}s`;
+}
+
+function spell(text){
+    synth.cancel();
+    [...text].forEach((c,i)=>{
+        let u=new SpeechSynthesisUtterance(c);
+        u.lang="en-US";
+        u.rate=0.75;
+        setTimeout(()=>synth.speak(u),i*450);
+    });
+}
+
+function play(){
+    if(replay<=0 || modalOpen) return;
+    replay--;
+    replayInfo.innerText = `Replay left: ${replay}`;
+    spell(items[index].toString());
+}
+
+function handleTimeUp(){
+    modalOpen = true;
+    synth.cancel();
+    let u=new SpeechSynthesisUtterance("Time is up");
+    u.lang="en-US";
+    synth.speak(u);
+    timeUpModal.style.display="flex";
+}
+
+function confirmTimeUp(){
+    timeUpModal.style.display="none";
+    next();
+}
+
+function manualNext(){
+    clearInterval(timerInterval);
+    next();
+}
+
+function next(){
+    answers.push(answer.value.trim());
+    index++;
+    if(index<items.length) loadWord();
+    else showResult();
+}
+
+function showResult(){
+    let correct=0, html="";
+    items.forEach((w,i)=>{
+        let ok=w.toLowerCase()===(answers[i]||"").toLowerCase();
+        if(ok) correct++;
+        html+=`<div class="result ${ok?"ok":"no"}">
+        <b>${w}</b><br>Your answer: ${answers[i]||""}
+        </div>`;
+    });
+    score.innerText=`${correct} / ${items.length}`;
+    list.innerHTML=html;
+    show("result");
+}
+
+answer.addEventListener("keydown",e=>{
+    if(e.key==="Enter") manualNext();
+});
+</script>
+</body>
+</html>
