@@ -90,9 +90,10 @@ input{
     text-align:center;
 }
     
-button {
+button, .btn {
     pointer-events: auto !important;
-    touch-action: manipulation;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent;
 }
 
 </style>
@@ -104,8 +105,8 @@ button {
 <!-- HOME -->
 <div id="home" class="page active">
 <h1>🎯 Pro Spelling Exam</h1>
-<button class="btn" id="wordBtn">Words</button>
-<button class="btn" id="numberBtn">Numbers</button>
+<button class="btn" id="wordBtn" type="button">Words</button>
+<button class="btn" id="numberBtn" type="button">Numbers</button>
 <a href="https://monkeytype.com/"><button class="btn" >Typing       ↗️</button></a>
 </div>
 
@@ -286,22 +287,25 @@ const DIFFICULT_WORDS = [
 /* UTILS */
 function shuffle(a){ return a.sort(()=>Math.random()-0.5); }
 
-function bindTap(id, callback){
+function bindButton(id, value){
     const el = document.getElementById(id);
 
-    el.addEventListener("click", (e)=>{
+    const handler = (e) => {
         e.preventDefault();
-        callback();
-    });
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        openDifficulty(value);
+        return false;
+    };
 
-    el.addEventListener("touchstart", (e)=>{
-        e.preventDefault();
-        callback();
-    });
+    el.addEventListener("pointerdown", handler, {passive:false});
+    el.addEventListener("touchstart", handler, {passive:false});
+    el.addEventListener("click", handler, {passive:false});
 }
 
-bindTap("wordBtn", ()=> openDifficulty("word"));
-bindTap("numberBtn", ()=> openDifficulty("number"));
+bindButton("wordBtn", "word");
+bindButton("numberBtn", "number");
+
     
 function randomNumbers(n){
     let s=new Set();
