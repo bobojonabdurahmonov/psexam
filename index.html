@@ -98,8 +98,8 @@ input{
 <!-- HOME -->
 <div id="home" class="page active">
 <h1>🎯 Pro Spelling Exam</h1>
-<button class="btn" onclick="openDifficulty('word')">Words</button>
-<button class="btn" onclick="openDifficulty('number')">Numbers</button>
+<button class="btn" id="wordBtn">Words</button>
+<button class="btn" id="numberBtn">Numbers</button>
 <a href="https://monkeytype.com/"><button class="btn" >Typing       ↗️</button></a>
 </div>
 
@@ -280,6 +280,15 @@ const DIFFICULT_WORDS = [
 /* UTILS */
 function shuffle(a){ return a.sort(()=>Math.random()-0.5); }
 
+document.getElementById("wordBtn").addEventListener("click", ()=>{
+    openDifficulty("word");
+});
+
+document.getElementById("numberBtn").addEventListener("click", ()=>{
+    openDifficulty("number");
+});
+
+    
 function randomNumbers(n){
     let s=new Set();
     while(s.size<n){
