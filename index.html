@@ -89,6 +89,12 @@ input{
     width:90%;
     text-align:center;
 }
+    
+button {
+    pointer-events: auto !important;
+    touch-action: manipulation;
+}
+
 </style>
 </head>
 
@@ -280,14 +286,22 @@ const DIFFICULT_WORDS = [
 /* UTILS */
 function shuffle(a){ return a.sort(()=>Math.random()-0.5); }
 
-document.getElementById("wordBtn").addEventListener("click", ()=>{
-    openDifficulty("word");
-});
+function bindTap(id, callback){
+    const el = document.getElementById(id);
 
-document.getElementById("numberBtn").addEventListener("click", ()=>{
-    openDifficulty("number");
-});
+    el.addEventListener("click", (e)=>{
+        e.preventDefault();
+        callback();
+    });
 
+    el.addEventListener("touchstart", (e)=>{
+        e.preventDefault();
+        callback();
+    });
+}
+
+bindTap("wordBtn", ()=> openDifficulty("word"));
+bindTap("numberBtn", ()=> openDifficulty("number"));
     
 function randomNumbers(n){
     let s=new Set();
