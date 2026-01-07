@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <title>Pro Spelling Exam</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
 body{
@@ -13,6 +14,9 @@ body{
     display:flex;
     justify-content:center;
     align-items:center;
+    margin:0;
+    padding:10px;
+    box-sizing:border-box;
 }
 .container{
     background:#fff;
@@ -36,6 +40,14 @@ h1{text-align:center;color:#667eea}
     font-size:18px;
     margin:10px 0;
     cursor:pointer;
+    -webkit-tap-highlight-color:rgba(0,0,0,0);
+    user-select:none;
+    -webkit-user-select:none;
+}
+
+.btn:active{
+    transform:scale(0.98);
+    background:#5568d3;
 }
 
 input{
@@ -44,6 +56,7 @@ input{
     font-size:18px;
     border-radius:10px;
     border:2px solid #ddd;
+    box-sizing:border-box;
 }
 
 .center{text-align:center}
@@ -63,15 +76,16 @@ input{
     color:#fff;
     font-size:36px;
     cursor:pointer;
+    -webkit-tap-highlight-color:rgba(0,0,0,0);
+}
+
+.play:active{
+    transform:scale(0.95);
 }
 
 .result{padding:12px;border-radius:8px;margin:8px 0}
 .ok{background:#e8f5e9;border-left:5px solid #4CAF50}
 .no{background:#ffebee;border-left:5px solid #f44336}
-
-#answer {
-    width: 95%;
-}
 
 .modal{
     position:fixed;
@@ -80,6 +94,7 @@ input{
     display:none;
     align-items:center;
     justify-content:center;
+    z-index:9999;
 }
 .modal-box{
     background:#fff;
@@ -88,12 +103,6 @@ input{
     max-width:420px;
     width:90%;
     text-align:center;
-}
-    
-button, .btn {
-    pointer-events: auto !important;
-    touch-action: manipulation !important;
-    -webkit-tap-highlight-color: transparent;
 }
 
 </style>
@@ -105,17 +114,17 @@ button, .btn {
 <!-- HOME -->
 <div id="home" class="page active">
 <h1>🎯 Pro Spelling Exam</h1>
-<button class="btn" onclick="openDifficulty('word')" type="button">Words</button>
-<button class="btn" onclick="openDifficulty('number')" type="button">Numbers</button>
-<a href="https://monkeytype.com/"><button class="btn">Typing ↗️</button></a>
+<button class="btn" id="wordBtn" type="button">Words</button>
+<button class="btn" id="numberBtn" type="button">Numbers</button>
+<a href="https://monkeytype.com/" target="_blank" style="text-decoration:none"><button class="btn" type="button">Typing ↗️</button></a>
 </div>
 
 <!-- DIFFICULTY -->
 <div id="difficulty" class="page">
 <h1>⚙️ Choose Difficulty</h1>
-<button class="btn" onclick="chooseDifficulty('easy')">Easy</button>
-<button class="btn" onclick="chooseDifficulty('normal')">Normal</button>
-<button class="btn" onclick="chooseDifficulty('difficult')">Difficult</button>
+<button class="btn" id="easyBtn">Easy</button>
+<button class="btn" id="normalBtn">Normal</button>
+<button class="btn" id="difficultBtn">Difficult</button>
 </div>
 
 <!-- TEST -->
@@ -126,12 +135,12 @@ button, .btn {
 <div class="center timer" id="timer"></div>
 
 <div class="center" style="margin:20px">
-<button class="play" onclick="play()">▶</button>
+<button class="play" id="playBtn">▶</button>
 <div id="replayInfo"></div>
 </div>
 
-<input id="answer" placeholder="Type here..." autofocus>
-<button class="btn" onclick="manualNext()">Next</button>
+<input id="answer" placeholder="Type here..." autocomplete="off">
+<button class="btn" id="nextBtn">Next</button>
 </div>
 
 <!-- RESULT -->
@@ -139,7 +148,7 @@ button, .btn {
 <h1>📊 Result</h1>
 <div id="score" class="center" style="font-size:26px;color:#667eea"></div>
 <div id="list"></div>
-<button class="btn" onclick="location.reload()">Restart</button>
+<button class="btn" id="restartBtn">Restart</button>
 </div>
 
 </div>
@@ -149,11 +158,17 @@ button, .btn {
 <div class="modal-box">
     <h2 style="color:#f44336">⏰ Time is up</h2>
     <p>Vaqt tugadi. Ushbu savol yakunlandi.</p>
-    <button class="btn" onclick="confirmTimeUp()">OK</button>
+    <button class="btn" id="confirmBtn">OK</button>
 </div>
 </div>
 
 <script>
+// Telegram WebApp initialization
+if(window.Telegram && window.Telegram.WebApp){
+    window.Telegram.WebApp.ready();
+    window.Telegram.WebApp.expand();
+}
+
 const synth = speechSynthesis;
 const MAX_REPLAY = 3;
 
@@ -173,34 +188,24 @@ let dynamicTime = 25;
 const EASY_WORDS = [
 "simple","basic","modern","natural","future",
 "system","method","design","process","support",
-
 "apple","pear","banana","orange","grape",
 "bread","water","coffee","sugar","salt",
-
 "global","local","public","private","normal",
 "easy","clear","clean","safe","ready",
-
 "name","fullname","number","email","address",
 "phone","login","logout","profile","account",
-
 "board","table","chair","window","door",
 "bridge","road","street","house","room",
-
 "book","pen","paper","note","school",
 "class","teacher","student","lesson","exam",
-
 "work","job","office","company","team",
 "manager","worker","client","service","task",
-
 "play","game","sport","music","movie",
 "video","photo","camera","sound","screen",
-
 "time","day","night","week","month",
 "year","today","tomorrow","yesterday","now",
-
 "open","close","start","stop","save",
 "load","send","receive","click","press",
-
 "happy","sad","good","bad","big",
 "small","fast","slow","new","old"
 ];
@@ -208,81 +213,60 @@ const EASY_WORDS = [
 const NORMAL_WORDS = [
 "optimization","implementation","authentication",
 "infrastructure","reconciliation","transparency",
-
 "globalization","inevitable","substantial","contemporary",
 "collaboration","administration","interpretation","prioritization",
 "consideration","qualification","responsibility","significance",
-
 "environmental","technological","development","organization",
 "communication","representation","recommendation","identification",
-
 "establishment","transformation","documentation","investigation",
 "configuration","specialization","characteristic","classification",
-
 "participation","regulation","distribution","coordination",
 "negotiation","presentation","standardization","recognition",
-
 "integration","innovation","evaluation","adaptation",
 "maintenance","production","submission","collection",
-
 "preparation","observation","prediction","competition",
 "association","assumption","interaction","conclusion"
 ];
-
 
 const DIFFICULT_WORDS = [
 "entrepreneurship","sustainability","accountability",
 "unprecedented","meticulous","phenomenon",
 "multifaceted","sophisticated","visualization","vulnerability",
-
-// +150 difficult words (C1–C2)
 "inconsequential","disproportionate","counterproductive","interdisciplinary",
 "misinterpretation","institutionalization","overcompensation","methodological",
 "philosophical","psychological",
-
 "electromagnetic","thermodynamics","biotechnology","neuroscience",
 "cryptocurrency","decentralization","interoperability","quantification",
 "approximation","differentiation",
-
 "heterogeneous","homogeneous","idiosyncratic","paradigmatic",
 "heuristic","axiomatic","empirical","theoretical","speculative","deterministic",
-
 "irreversibility","incompatibility","inaccessibility","unpredictability",
 "interchangeability","reproducibility","generalization","contextualization",
 "conceptualization","operationalization",
-
 "bureaucratization","commercialization","democratization","industrialization",
 "privatization","monopolization","digitalization","globalization","urbanization",
 "modernization",
-
 "dissemination","proliferation","consolidation","diversification",
 "prioritization","rationalization","standardization","synchronization",
 "optimization","restructuring",
-
 "misconception","presupposition","juxtaposition","contradiction",
 "ambiguity","paradox","fallibility","subjectivity","objectivity","relativity",
-
 "circumstantial","substantiation","corroboration","justification",
 "extrapolation","interpretability","verifiability","plausibility",
 "credibility","reliability",
-
 "anthropological","sociological","epistemological","ontological",
 "metaphysical","existential","phenomenological","dialectical",
 "hermeneutical","teleological",
-
 "macroeconomic","microeconomic","fiscalization","monetarization",
 "deflationary","inflationary","liberalization","deregulation",
 "capitalization","financialization",
-
 "bioengineering","nanotechnology","cybersecurity","cryptography",
 "machinelearning","artificiality","automatization","robotization",
 "virtualization","augmentation",
-
 "indistinguishable","incomprehensible","counterintuitive",
 "irreconcilable","unsubstantiated","incontrovertible",
 "uncharacteristic","unintelligible","nonlinear","multidimensional"
 ];
-
 
 /* UTILS */
 function shuffle(a){ return a.sort(()=>Math.random()-0.5); }
@@ -342,11 +326,13 @@ function loadWord(){
     counter.innerText = `${index+1} / ${items.length}`;
     replayInfo.innerText = `Replay left: ${replay}`;
     answer.value = "";
-    answer.focus();
-
+    
     updateTimerUI();
     startTimer();
-    setTimeout(play,500);
+    setTimeout(()=>{
+        play();
+        answer.focus();
+    },500);
 }
 
 function startTimer(){
@@ -414,7 +400,7 @@ function showResult(){
         let ok=w.toLowerCase()===(answers[i]||"").toLowerCase();
         if(ok) correct++;
         html+=`<div class="result ${ok?"ok":"no"}">
-        <b>${w}</b><br>Your answer: ${answers[i]||""}
+        <b>${w}</b><br>Your answer: ${answers[i]||"(no answer)"}
         </div>`;
     });
     score.innerText=`${correct} / ${items.length}`;
@@ -422,6 +408,40 @@ function showResult(){
     show("result");
 }
 
+// EVENT LISTENERS - Mobile-friendly approach
+function addClick(id, handler){
+    const el = document.getElementById(id);
+    if(!el) return;
+    
+    el.addEventListener('touchend', (e)=>{
+        e.preventDefault();
+        handler();
+    }, {passive:false});
+    
+    el.addEventListener('click', (e)=>{
+        e.preventDefault();
+        handler();
+    });
+}
+
+// Main buttons
+addClick('wordBtn', ()=>openDifficulty('word'));
+addClick('numberBtn', ()=>openDifficulty('number'));
+
+// Difficulty buttons
+addClick('easyBtn', ()=>chooseDifficulty('easy'));
+addClick('normalBtn', ()=>chooseDifficulty('normal'));
+addClick('difficultBtn', ()=>chooseDifficulty('difficult'));
+
+// Test buttons
+addClick('playBtn', play);
+addClick('nextBtn', manualNext);
+
+// Modal & restart
+addClick('confirmBtn', confirmTimeUp);
+addClick('restartBtn', ()=>location.reload());
+
+// Enter key support
 answer.addEventListener("keydown",e=>{
     if(e.key==="Enter") manualNext();
 });
