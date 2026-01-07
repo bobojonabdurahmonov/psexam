@@ -105,9 +105,9 @@ button, .btn {
 <!-- HOME -->
 <div id="home" class="page active">
 <h1>🎯 Pro Spelling Exam</h1>
-<button class="btn" id="wordBtn" type="button">Words</button>
-<button class="btn" id="numberBtn" type="button">Numbers</button>
-<a href="https://monkeytype.com/"><button class="btn" >Typing       ↗️</button></a>
+<button class="btn" onclick="openDifficulty('word')" type="button">Words</button>
+<button class="btn" onclick="openDifficulty('number')" type="button">Numbers</button>
+<a href="https://monkeytype.com/"><button class="btn">Typing ↗️</button></a>
 </div>
 
 <!-- DIFFICULTY -->
@@ -286,26 +286,6 @@ const DIFFICULT_WORDS = [
 
 /* UTILS */
 function shuffle(a){ return a.sort(()=>Math.random()-0.5); }
-
-function bindButton(id, value){
-    const el = document.getElementById(id);
-
-    const handler = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        openDifficulty(value);
-        return false;
-    };
-
-    el.addEventListener("pointerdown", handler, {passive:false});
-    el.addEventListener("touchstart", handler, {passive:false});
-    el.addEventListener("click", handler, {passive:false});
-}
-
-bindButton("wordBtn", "word");
-bindButton("numberBtn", "number");
-
     
 function randomNumbers(n){
     let s=new Set();
