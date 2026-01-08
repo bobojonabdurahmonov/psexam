@@ -3,10 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <title>Pro Spelling Exam</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
+* {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+}
+
 body{
     font-family: var(--tg-theme-font-family, 'Segoe UI', Arial, sans-serif);
     background: var(--tg-theme-bg-color, linear-gradient(135deg,#667eea,#764ba2));
@@ -17,6 +22,7 @@ body{
     margin:0;
     padding:10px;
     box-sizing:border-box;
+    touch-action: manipulation;
 }
 .container{
     background: var(--tg-theme-secondary-bg-color, #fff);
@@ -43,15 +49,15 @@ h1{
     font-size:18px;
     margin:10px 0;
     cursor:pointer;
-    -webkit-tap-highlight-color:rgba(0,0,0,0);
     user-select:none;
     -webkit-user-select:none;
-    transition: transform 0.1s;
+    transition: transform 0.1s, opacity 0.1s;
+    touch-action: manipulation;
 }
 
 .btn:active{
-    transform:scale(0.98);
-    opacity: 0.9;
+    transform:scale(0.96);
+    opacity: 0.85;
 }
 
 .btn-secondary{
@@ -84,19 +90,23 @@ input{
 }
 
 .play{
-    width:90px;height:90px;
+    width:90px;
+    height:90px;
     border-radius:50%;
     border:none;
     background:#4CAF50;
     color:#fff;
     font-size:36px;
     cursor:pointer;
-    -webkit-tap-highlight-color:rgba(0,0,0,0);
-    transition: transform 0.1s;
+    transition: transform 0.1s, opacity 0.1s;
+    touch-action: manipulation;
+    user-select:none;
+    -webkit-user-select:none;
 }
 
 .play:active{
-    transform:scale(0.95);
+    transform:scale(0.92);
+    opacity: 0.85;
 }
 
 .result{
@@ -138,6 +148,11 @@ input{
     margin-top:10px;
 }
 
+a {
+    text-decoration: none;
+    display: block;
+}
+
 </style>
 </head>
 
@@ -148,9 +163,9 @@ input{
 <div id="home" class="page active">
 <h1>🎯 Pro Spelling Exam</h1>
 <p class="info-text center">Train with words and numbers</p>
-<button class="btn" id="wordBtn" type="button">📝 Words</button>
-<button class="btn" id="numberBtn" type="button">🔢 Numbers</button>
-<a href="https://monkeytype.com/" target="_blank" style="text-decoration:none">
+<button class="btn" data-action="word-mode" type="button">📝 Words</button>
+<button class="btn" data-action="number-mode" type="button">🔢 Numbers</button>
+<a href="https://monkeytype.com/" target="_blank">
     <button class="btn btn-secondary" type="button">⌨️ Typing Practice ↗️</button>
 </a>
 </div>
@@ -158,9 +173,9 @@ input{
 <!-- DIFFICULTY -->
 <div id="difficulty" class="page">
 <h1>⚙️ Choose Difficulty</h1>
-<button class="btn" id="easyBtn">🟢 Easy</button>
-<button class="btn" id="normalBtn">🟡 Normal</button>
-<button class="btn" id="difficultBtn">🔴 Difficult</button>
+<button class="btn" data-action="difficulty-easy">🟢 Easy</button>
+<button class="btn" data-action="difficulty-normal">🟡 Normal</button>
+<button class="btn" data-action="difficulty-difficult">🔴 Difficult</button>
 </div>
 
 <!-- TEST -->
@@ -171,12 +186,12 @@ input{
 <div class="center timer" id="timer"></div>
 
 <div class="center" style="margin:20px">
-<button class="play" id="playBtn">▶</button>
+<button class="play" data-action="play">▶</button>
 <div id="replayInfo" class="info-text"></div>
 </div>
 
 <input id="answer" placeholder="Type here..." autocomplete="off">
-<button class="btn" id="nextBtn">Next ➡️</button>
+<button class="btn" data-action="next">Next ➡️</button>
 </div>
 
 <!-- RESULT -->
@@ -185,9 +200,9 @@ input{
 <div id="score" class="center" style="font-size:32px;font-weight:bold;color:var(--tg-theme-button-color, #667eea);margin:20px 0"></div>
 <div id="percentage" class="center info-text"></div>
 <div id="list"></div>
-<button class="btn share-btn" id="shareBtn">📤 Share Result</button>
-<button class="btn" id="restartBtn">🔄 Restart</button>
-<button class="btn btn-secondary" id="homeBtn">🏠 Home</button>
+<button class="btn share-btn" data-action="share">📤 Share Result</button>
+<button class="btn" data-action="restart">🔄 Restart</button>
+<button class="btn btn-secondary" data-action="home">🏠 Home</button>
 </div>
 
 </div>
@@ -197,7 +212,7 @@ input{
 <div class="modal-box">
     <h2 style="color:#f44336">⏰ Time is up!</h2>
     <p>Vaqt tugadi. Ushbu savol yakunlandi.</p>
-    <button class="btn" id="confirmBtn">OK</button>
+    <button class="btn" data-action="confirm-timeup">OK</button>
 </div>
 </div>
 
@@ -471,7 +486,6 @@ function showResult(){
     percentage.innerText=`${percent}% to'g'ri`;
     list.innerHTML=html;
     
-    // Send data to bot
     if(percent >= 70) {
         haptic('success');
     } else {
@@ -501,46 +515,58 @@ Try it yourself! 👇`;
     tg.openTelegramLink(url);
 }
 
-// EVENT LISTENERS - Mobile-friendly approach
-function addClick(id, handler){
-    const el = document.getElementById(id);
-    if(!el) return;
+// Universal click handler for all buttons
+function handleClick(e) {
+    e.preventDefault();
+    e.stopPropagation();
     
-    el.addEventListener('touchend', (e)=>{
-        e.preventDefault();
-        handler();
-    }, {passive:false});
+    const target = e.target.closest('[data-action]');
+    if (!target) return;
     
-    el.addEventListener('click', (e)=>{
-        e.preventDefault();
-        handler();
-    });
+    const action = target.dataset.action;
+    
+    switch(action) {
+        case 'word-mode':
+            openDifficulty('word');
+            break;
+        case 'number-mode':
+            openDifficulty('number');
+            break;
+        case 'difficulty-easy':
+            chooseDifficulty('easy');
+            break;
+        case 'difficulty-normal':
+            chooseDifficulty('normal');
+            break;
+        case 'difficulty-difficult':
+            chooseDifficulty('difficult');
+            break;
+        case 'play':
+            play();
+            break;
+        case 'next':
+            manualNext();
+            break;
+        case 'confirm-timeup':
+            confirmTimeUp();
+            break;
+        case 'restart':
+            haptic('medium');
+            location.reload();
+            break;
+        case 'home':
+            haptic('light');
+            show('home');
+            break;
+        case 'share':
+            shareResult();
+            break;
+    }
 }
 
-// Main buttons
-addClick('wordBtn', ()=>openDifficulty('word'));
-addClick('numberBtn', ()=>openDifficulty('number'));
-
-// Difficulty buttons
-addClick('easyBtn', ()=>chooseDifficulty('easy'));
-addClick('normalBtn', ()=>chooseDifficulty('normal'));
-addClick('difficultBtn', ()=>chooseDifficulty('difficult'));
-
-// Test buttons
-addClick('playBtn', play);
-addClick('nextBtn', manualNext);
-
-// Modal & restart
-addClick('confirmBtn', confirmTimeUp);
-addClick('restartBtn', ()=>{
-    haptic('medium');
-    location.reload();
-});
-addClick('homeBtn', ()=>{
-    haptic('light');
-    show('home');
-});
-addClick('shareBtn', shareResult);
+// Add event listener to document for event delegation
+document.addEventListener('touchend', handleClick, false);
+document.addEventListener('click', handleClick, false);
 
 // Enter key support
 answer.addEventListener("keydown",e=>{
